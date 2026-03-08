@@ -1,0 +1,1054 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GitFlow — Streamline Your Git Workflow</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg-deep: #0a0a0a;
+      --bg-dark: #111111;
+      --bg-terminal: #0d1117;
+      --bg-card: #161b22;
+      --accent-green: #00ff88;
+      --accent-cyan: #00d4ff;
+      --accent-dim: #00ff8855;
+      --text-primary: #e6edf3;
+      --text-secondary: #8b949e;
+      --text-muted: #484f58;
+      --border-color: #30363d;
+      --glow-green: 0 0 20px #00ff8844;
+      --glow-cyan: 0 0 20px #00d4ff44;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: 'Space Grotesk', sans-serif;
+      background: var(--bg-deep);
+      color: var(--text-primary);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* Scanline effect */
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0, 0, 0, 0.1) 2px,
+        rgba(0, 0, 0, 0.1) 4px
+      );
+      z-index: 9999;
+    }
+
+    /* CRT flicker */
+    body::after {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      background: rgba(0, 255, 136, 0.01);
+      z-index: 9998;
+      animation: flicker 0.15s infinite;
+    }
+
+    @keyframes flicker {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.98; }
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* Navigation */
+    nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      background: rgba(10, 10, 10, 0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    nav .container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      height: 64px;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--accent-green);
+      text-decoration: none;
+    }
+
+    .logo-icon {
+      width: 32px;
+      height: 32px;
+      border: 2px solid var(--accent-green);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 32px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+
+    .nav-links a:hover {
+      color: var(--accent-green);
+    }
+
+    .nav-links .highlight {
+      color: var(--accent-cyan);
+    }
+
+    /* Hero Section */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      padding-top: 80px;
+      background: 
+        radial-gradient(ellipse at 20% 50%, rgba(0, 255, 136, 0.08) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 20%, rgba(0, 212, 255, 0.06) 0%, transparent 40%),
+        var(--bg-deep);
+    }
+
+    .hero-content {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 64px;
+      align-items: center;
+    }
+
+    .hero-text h1 {
+      font-size: 4rem;
+      font-weight: 700;
+      line-height: 1.1;
+      margin-bottom: 24px;
+    }
+
+    .hero-text h1 .highlight {
+      color: var(--accent-green);
+      text-shadow: var(--glow-green);
+    }
+
+    .hero-text h1 .accent {
+      color: var(--accent-cyan);
+      text-shadow: var(--glow-cyan);
+    }
+
+    .hero-text p {
+      font-size: 1.25rem;
+      color: var(--text-secondary);
+      margin-bottom: 32px;
+      max-width: 500px;
+    }
+
+    .install-cmd {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      background: var(--bg-terminal);
+      border: 1px solid var(--accent-green);
+      border-radius: 8px;
+      padding: 16px 24px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.95rem;
+      box-shadow: var(--glow-green);
+    }
+
+    .install-cmd .prompt {
+      color: var(--accent-green);
+    }
+
+    .install-cmd .cmd {
+      color: var(--text-primary);
+    }
+
+    /* Terminal Demo */
+    .terminal {
+      background: var(--bg-terminal);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    }
+
+    .terminal-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 16px;
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .terminal-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+
+    .terminal-dot.red { background: #ff5f56; }
+    .terminal-dot.yellow { background: #ffbd2e; }
+    .terminal-dot.green { background: #27ca40; }
+
+    .terminal-title {
+      margin-left: 12px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .terminal-body {
+      padding: 20px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      min-height: 320px;
+    }
+
+    .terminal-line {
+      display: flex;
+      margin-bottom: 8px;
+      opacity: 0;
+      animation: fadeIn 0.3s forwards;
+    }
+
+    @keyframes fadeIn {
+      to { opacity: 1; }
+    }
+
+    .terminal-line .prompt {
+      color: var(--accent-green);
+      margin-right: 12px;
+      flex-shrink: 0;
+    }
+
+    .terminal-line .output {
+      color: var(--text-secondary);
+    }
+
+    .terminal-line .success { color: var(--accent-green); }
+    .terminal-line .info { color: var(--accent-cyan); }
+    .terminal-line .dim { color: var(--text-muted); }
+    .terminal-line .warning { color: #ffbd2e; }
+
+    /* Features Section */
+    .features {
+      padding: 120px 0;
+      background: var(--bg-dark);
+    }
+
+    .section-header {
+      text-align: center;
+      margin-bottom: 64px;
+    }
+
+    .section-header h2 {
+      font-size: 2.5rem;
+      font-weight: 700;
+      margin-bottom: 16px;
+    }
+
+    .section-header h2 span {
+      color: var(--accent-cyan);
+    }
+
+    .section-header p {
+      color: var(--text-secondary);
+      font-size: 1.1rem;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+    }
+
+    .feature-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 32px;
+      transition: all 0.3s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .feature-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 3px;
+      height: 100%;
+      background: var(--accent-green);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .feature-card:hover {
+      border-color: var(--accent-green);
+      transform: translateY(-4px);
+    }
+
+    .feature-card:hover::before {
+      opacity: 1;
+    }
+
+    .feature-icon {
+      width: 48px;
+      height: 48px;
+      background: rgba(0, 255, 136, 0.1);
+      border: 1px solid var(--accent-dim);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      margin-bottom: 20px;
+    }
+
+    .feature-card h3 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+
+    .feature-card p {
+      color: var(--text-secondary);
+      font-size: 0.95rem;
+    }
+
+    .feature-card code {
+      display: inline-block;
+      margin-top: 12px;
+      padding: 6px 12px;
+      background: var(--bg-terminal);
+      border-radius: 6px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      color: var(--accent-cyan);
+    }
+
+    /* Commands Section */
+    .commands {
+      padding: 120px 0;
+      background: var(--bg-deep);
+    }
+
+    .commands-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 32px;
+    }
+
+    .command-group {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .command-group h3 {
+      padding: 20px 24px;
+      background: var(--bg-terminal);
+      border-bottom: 1px solid var(--border-color);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1rem;
+      color: var(--accent-green);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .command-group h3::before {
+      content: '>';
+      color: var(--accent-cyan);
+    }
+
+    .command-list {
+      padding: 16px 24px;
+    }
+
+    .command-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .command-item:last-child {
+      border-bottom: none;
+    }
+
+    .command-item code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.9rem;
+      color: var(--text-primary);
+    }
+
+    .command-item span {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    /* Installation Section */
+    .installation {
+      padding: 120px 0;
+      background: var(--bg-dark);
+    }
+
+    .install-steps {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+      margin-top: 48px;
+    }
+
+    .install-step {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 32px;
+      text-align: center;
+      position: relative;
+    }
+
+    .install-step::after {
+      content: '→';
+      position: absolute;
+      right: -24px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--accent-green);
+      font-size: 1.5rem;
+      opacity: 0.5;
+    }
+
+    .install-step:last-child::after {
+      display: none;
+    }
+
+    .step-number {
+      width: 48px;
+      height: 48px;
+      background: var(--accent-green);
+      color: var(--bg-deep);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 1.25rem;
+      margin: 0 auto 20px;
+    }
+
+    .install-step h3 {
+      font-size: 1.1rem;
+      margin-bottom: 12px;
+    }
+
+    .install-step p {
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+      margin-bottom: 16px;
+    }
+
+    .install-step code {
+      display: block;
+      padding: 12px 16px;
+      background: var(--bg-terminal);
+      border-radius: 8px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      color: var(--accent-cyan);
+      text-align: left;
+    }
+
+    .requirements {
+      margin-top: 64px;
+      text-align: center;
+      padding: 32px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+    }
+
+    .requirements h3 {
+      color: var(--accent-cyan);
+      margin-bottom: 16px;
+    }
+
+    .requirements code {
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--accent-green);
+    }
+
+    /* Footer */
+    footer {
+      padding: 48px 0;
+      background: var(--bg-terminal);
+      border-top: 1px solid var(--border-color);
+    }
+
+    .footer-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 24px;
+    }
+
+    .footer-links a {
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 0.9rem;
+      transition: color 0.2s;
+    }
+
+    .footer-links a:hover {
+      color: var(--accent-green);
+    }
+
+    .footer-info {
+      color: var(--text-muted);
+      font-size: 0.85rem;
+    }
+
+    .footer-info a {
+      color: var(--accent-cyan);
+      text-decoration: none;
+    }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+      .hero-content {
+        grid-template-columns: 1fr;
+        text-align: center;
+      }
+
+      .hero-text p {
+        margin: 0 auto 32px;
+      }
+
+      .features-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .install-steps {
+        grid-template-columns: 1fr;
+      }
+
+      .install-step::after {
+        display: none;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .hero-text h1 {
+        font-size: 2.5rem;
+      }
+
+      .features-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .commands-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .nav-links {
+        display: none;
+      }
+
+      .footer-content {
+        flex-direction: column;
+        gap: 24px;
+        text-align: center;
+      }
+    }
+
+    /* Animations */
+    .reveal {
+      opacity: 0;
+      transform: translateY(30px);
+      transition: all 0.6s ease-out;
+    }
+
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Typing cursor */
+    .cursor {
+      display: inline-block;
+      width: 8px;
+      height: 1.2em;
+      background: var(--accent-green);
+      margin-left: 4px;
+      animation: blink 1s step-end infinite;
+      vertical-align: text-bottom;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+
+    /* Git branch visual */
+    .git-visual {
+      position: absolute;
+      right: 10%;
+      top: 50%;
+      transform: translateY(-50%);
+      opacity: 0.1;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <!-- Navigation -->
+  <nav>
+    <div class="container">
+      <a href="#" class="logo">
+        <div class="logo-icon">$</div>
+        <span>GitFlow</span>
+      </a>
+      <ul class="nav-links">
+        <li><a href="#features">Features</a></li>
+        <li><a href="#commands">Commands</a></li>
+        <li><a href="#installation">Install</a></li>
+        <li><a href="https://github.com/philipdaquin/GitFlow" class="highlight" target="_blank">GitHub →</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="container hero-content">
+      <div class="hero-text">
+        <h1>Git<span class="highlight">Flow</span> <span class="accent">CLI</span></h1>
+        <p>A modern CLI tool for streamlining Git workflows. Built with Swift. Write less, commit more.</p>
+        <div class="install-cmd">
+          <span class="prompt">$</span>
+          <span class="cmd">swift install https://github.com/philipdaquin/GitFlow.git</span>
+        </div>
+      </div>
+      
+      <!-- Terminal Demo -->
+      <div class="terminal reveal">
+        <div class="terminal-header">
+          <div class="terminal-dot red"></div>
+          <div class="terminal-dot yellow"></div>
+          <div class="terminal-dot green"></div>
+          <span class="terminal-title">gitflow — zsh</span>
+        </div>
+        <div class="terminal-body" id="terminal">
+          <!-- Terminal content populated by JS -->
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features Section -->
+  <section class="features" id="features">
+    <div class="container">
+      <div class="section-header reveal">
+        <h2>Power <span>Commands</span></h2>
+        <p>Everything you need to dominate your git workflow. No more typing the same commands over and over.</p>
+      </div>
+      
+      <div class="features-grid">
+        <div class="feature-card reveal">
+          <div class="feature-icon">⚡</div>
+          <h3>Quick Commit</h3>
+          <p>Stage all and commit with auto-generated or conventional messages. Just describe what you did.</p>
+          <code>gitflow commit --auto</code>
+        </div>
+        
+        <div class="feature-card reveal">
+          <div class="feature-icon">🌿</div>
+          <h3>Branch Management</h3>
+          <p>List, create, delete, and rename branches with a single command.</p>
+          <code>gitflow branch create feature-x</code>
+        </div>
+        
+        <div class="feature-card reveal">
+          <div class="feature-icon">📋</div>
+          <h3>Changelog Generator</h3>
+          <p>Generate changelogs from git tags. Supports conventional commits format.</p>
+          <code>gitflow changelog --conventional</code>
+        </div>
+        
+        <div class="feature-card reveal">
+          <div class="feature-icon">↩</div>
+          <h3>Undo Operations</h3>
+          <p>Soft or hard reset with count support. Made a mistake? No problem.</p>
+          <code>gitflow undo --count 3</code>
+        </div>
+        
+        <div class="feature-card reveal">
+          <div class="feature-icon">📦</div>
+          <h3>Stash Helpers</h3>
+          <p>List, push, pop, and drop stashes. Quick stash with messages.</p>
+          <code>gitflow stash push "WIP: feature"</code>
+        </div>
+        
+        <div class="feature-card reveal">
+          <div class="feature-icon">🔄</div>
+          <h3>Sync Commands</h3>
+          <p>Fetch, pull, and push with a single command. Keep your repo in sync.</p>
+          <code>gitflow sync --pull</code>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Commands Reference -->
+  <section class="commands" id="commands">
+    <div class="container">
+      <div class="section-header reveal">
+        <h2>Command <span>Reference</span></h2>
+        <p>All available commands at a glance. Because who remembers everything?</p>
+      </div>
+      
+      <div class="commands-grid">
+        <div class="command-group reveal">
+          <h3>commit</h3>
+          <div class="command-list">
+            <div class="command-item">
+              <code>gitflow commit -m "msg"</code>
+              <span>Commit with message</span>
+            </div>
+            <div class="command-item">
+              <code>gitflow commit --auto</code>
+              <span>Auto-generated message</span>
+            </div>
+            <div class="command-item">
+              <code>gitflow commit --conventional</code>
+              <span>Conventional commit</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="command-group reveal">
+          <h3>branch</h3>
+          <div class="command-list">
+            <div class="command-item">
+              <code>gitflow branch list</code>
+              <span>List all branches</span>
+            </div>
+            <div class="command-item">
+              <code>gitflow branch create &lt;name&gt;</code>
+              <span>Create new branch</span>
+            </div>
+            <div class="command-item">
+              <code>gitflow branch delete &lt;name&gt;</code>
+              <span>Delete branch</span>
+            </div>
+            <div class="command-item">
+              <code>gitflow branch rename &lt;name&gt;</code>
+              <span>Rename branch</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="command-group reveal">
+          <h3>changelog</h3>
+          <div class="command-list">
+            <div class="command-item">
+              <code>gitflow changelog</code>
+              <span>Generate changelog</span>
+            </div>
+            <div class="command-item">
+              <code>gitflow changelog --from v1.0.0</code>
+              <span>From specific tag</span>
+            </div>
+            <div class="command-item">
+              <code>gitflow changelog --conventional</code>
+              <span>Conventional format</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="command-group reveal">
+          <h3>undo</h3>
+          <div class="command-list">
+            <div class="command-item">
+              <code>gitflow undo</code>
+              <span>Undo last commit</span>
+            </div>
+            <div class="command-item">
+              <code>gitflow undo --count 3</code>
+              <span>Undo last N commits</span>
+            </div>
+            <div class="command-item">
+              <code>gitflow undo --hard</code>
+              <span>Hard reset</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="command-group reveal">
+          <h3>stash</h3>
+          <div class="command-list">
+            <div class="command-item">
+              <code>gitflow stash list</code>
+              <span>List stashes</span>
+            </div>
+            <div class="command-item">
+              <code>gitflow stash push "msg"</code>
+              <span>Push stash</span>
+            </div>
+            <div class="command-item">
+              <code>gitflow stash pop</code>
+              <span>Pop latest stash</span>
+            </div>
+            <div class="command-item">
+              <code>gitflow stash drop</code>
+              <span>Drop stash</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="command-group reveal">
+          <h3>misc</h3>
+          <div class="command-list">
+            <div class="command-item">
+              <code>gitflow sync</code>
+              <span>Fetch all</span>
+            </div>
+            <div class="command-item">
+              <code>gitflow sync --pull</code>
+              <span>Fetch and pull</span>
+            </div>
+            <div class="command-item">
+              <code>gitflow info</code>
+              <span>Repo info</span>
+            </div>
+            <div class="command-item">
+              <code>gitflow config</code>
+              <span>Configuration</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Installation Section -->
+  <section class="installation" id="installation">
+    <div class="container">
+      <div class="section-header reveal">
+        <h2>Get <span>Started</span></h2>
+        <p>Install GitFlow in seconds. You just need Swift.</p>
+      </div>
+      
+      <div class="install-steps">
+        <div class="install-step reveal">
+          <div class="step-number">1</div>
+          <h3>Clone Repository</h3>
+          <p>Get the source code</p>
+          <code>git clone https://github.com/<br>philipdaquin/GitFlow.git</code>
+        </div>
+        
+        <div class="install-step reveal">
+          <div class="step-number">2</div>
+          <h3>Build & Install</h3>
+          <p>Compile with Swift</p>
+          <code>swift build -c release &&<br>cp .build/release/GitFlow /usr/local/bin/gitflow</code>
+        </div>
+        
+        <div class="install-step reveal">
+          <div class="step-number">3</div>
+          <h3>Or Use Swift Install</h3>
+          <p>The easy way</p>
+          <code>swift install https://github.com/<br>philipdaquin/GitFlow.git</code>
+        </div>
+      </div>
+      
+      <div class="requirements reveal">
+        <h3>⚠️ Requirements</h3>
+        <p>You need <code>Swift</code> installed on your system. macOS comes with Swift pre-installed. On Linux, install via <code>swift.org</code></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container footer-content">
+      <div class="footer-links">
+        <a href="https://github.com/philipdaquin/GitFlow" target="_blank">GitHub</a>
+        <a href="https://github.com/philipdaquin/GitFlow/releases" target="_blank">Releases</a>
+        <a href="https://github.com/philipdaquin/GitFlow/blob/main/LICENSE" target="_blank">License</a>
+      </div>
+      <div class="footer-info">
+        <a href="https://github.com/philipdaquin">@philipdaquin</a> · MIT License
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Terminal animation
+    const terminal = document.getElementById('terminal');
+    const terminalLines = [
+      { prompt: '~', output: 'gitflow --version', color: 'info' },
+      { prompt: '~', output: 'gitflow commit --auto', color: 'success' },
+      { prompt: '→', output: '✓ Staged: 3 files', color: 'success', indent: true },
+      { prompt: '→', output: '✓ Committed: feat: add new login', color: 'success', indent: true },
+      { prompt: '→', output: '  hash: a1b2c3d', color: 'dim', indent: true },
+      { prompt: '~', output: 'gitflow sync --pull', color: 'info' },
+      { prompt: '→', output: '↓ Fetching origin...', color: 'dim', indent: true },
+      { prompt: '→', output: '✓ Pulled 2 new commits', color: 'success', indent: true },
+      { prompt: '~', output: 'gitflow changelog --conventional', color: 'info' },
+      { prompt: '→', output: 'Generated CHANGELOG.md', color: 'success', indent: true },
+      { prompt: '→', output: '  Features: 3', color: 'dim', indent: true },
+      { prompt: '→', output: '  Fixes: 1', color: 'dim', indent: true },
+      { prompt: '~', output: '█', color: 'success', noCursor: true }
+    ];
+
+    let lineIndex = 0;
+    let charIndex = 0;
+    let currentLine = null;
+    let isDeleting = false;
+
+    function typeLine() {
+      if (lineIndex >= terminalLines.length) {
+        // Reset after delay
+        setTimeout(() => {
+          terminal.innerHTML = '';
+          lineIndex = 0;
+          typeLine();
+        }, 5000);
+        return;
+      }
+
+      const lineData = terminalLines[lineIndex];
+
+      if (!currentLine) {
+        currentLine = document.createElement('div');
+        currentLine.className = 'terminal-line';
+        
+        const prompt = document.createElement('span');
+        prompt.className = 'prompt';
+        prompt.textContent = lineData.prompt;
+        currentLine.appendChild(prompt);
+
+        const output = document.createElement('span');
+        output.className = `output ${lineData.color}`;
+        if (lineData.indent) {
+          output.style.paddingLeft = '20px';
+        }
+        currentLine.appendChild(output);
+
+        if (lineData.noCursor) {
+          currentLine.style.animation = 'fadeIn 0.3s forwards';
+          terminal.appendChild(currentLine);
+          lineIndex++;
+          setTimeout(typeLine, 500);
+          return;
+        }
+
+        terminal.appendChild(currentLine);
+      }
+
+      const output = currentLine.querySelector('.output');
+
+      if (!isDeleting && charIndex < lineData.output.length) {
+        output.textContent = lineData.output.substring(0, charIndex + 1);
+        charIndex++;
+        setTimeout(typeLine, 30 + Math.random() * 30);
+      } else if (!isDeleting && charIndex === lineData.output.length) {
+        // Add cursor
+        if (!output.querySelector('.cursor')) {
+          const cursor = document.createElement('span');
+          cursor.className = 'cursor';
+          output.appendChild(cursor);
+        }
+        lineIndex++;
+        charIndex = 0;
+        currentLine = null;
+        setTimeout(typeLine, 400);
+      }
+    }
+
+    // Start terminal animation
+    typeLine();
+
+    // Scroll reveal animation
+    const revealElements = document.querySelectorAll('.reveal');
+
+    function reveal() {
+      revealElements.forEach((el, index) => {
+        const rect = el.getBoundingClientRect();
+        const windowHeight = window.innerHeight;
+        
+        if (rect.top < windowHeight - 100) {
+          setTimeout(() => {
+            el.classList.add('visible');
+          }, index * 100);
+        }
+      });
+    }
+
+    window.addEventListener('scroll', reveal);
+    window.addEventListener('load', reveal);
+  </script>
+</body>
+</html>
